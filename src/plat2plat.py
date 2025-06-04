@@ -138,7 +138,7 @@ async def on_message(message):
                     platform_emoji = CACHED_APP_EMOJIS.get(platform_key, '▪️')
                     # Create a clickable link where the text is the standard emoji
                     clickable_icons.append(f"\n[{platform_emoji} {platform_value['name']}]({platform_url})\n")
-            if clickable_icons:
+            if clickable_icons and len(clickable_icons) > 0:
                 embed.add_field(
                     name="Listen On:\n",
                     value=" ".join(clickable_icons),
