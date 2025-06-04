@@ -56,6 +56,20 @@ def find_music_link(text):
         return match.group(0) # Return the full matched URL
     return None
 
+def get_platform(url):
+    """
+    Determines the platform based on the URL.
+    Returns 'spotify', 'appleMusic', 'soundCloud', or 'youtube'.
+    """
+    if 'open.spotify.com' in url:
+        return 'spotify'
+    elif 'music.apple.com' in url:
+        return 'appleMusic'
+    elif 'soundcloud.com' in url:
+        return 'soundCloud'
+    elif 'youtu.be' in url or 'youtube.com/watch?v=' in url:
+        return 'youtube'
+    return None
 
 @client.event
 async def on_ready():
@@ -92,54 +106,55 @@ async def on_message(message):
             return
         
         
-          # Regex to find Spotify track URLs
         music_link = find_music_link(message.content)
+        music_platform = get_platform(music_link)
 
-        if music_link:
-       
-            api_url = f'https://api.song.link/v1-alpha.1/links?url={music_link}'\
+        api_url = f'https://api.song.link/v1-alpha.1/links?url={music_link}'
+        
+        try:
+            response = requests.get(api_url)
+            response.raise_for_status()
+            data = response.json()
             
-            try:
-                response = requests.get(api_url)
-                response.raise_for_status()
-                data = response.json()
-               
-                song_info = data['entitiesByUniqueId'][data['entityUniqueId']]
-                song_title = song_info.get('title', 'Unknown Title')
-                artist_name = song_info.get('artistName', 'Unknown Artist')
-                thumbnail_url = song_info.get('thumbnailUrl')
+            song_info = data['entitiesByUniqueId'][data['entityUniqueId']]
+            song_title = song_info.get('title', 'Unknown Title')
+            artist_name = song_info.get('artistName', 'Unknown Artist')
+            thumbnail_url = song_info.get('thumbnailUrl')
 
-                embed = discord.Embed(title=f"{song_title} by {artist_name}", color=discord.Color.blue())
+            embed = discord.Embed(title=f"{song_title} by {artist_name}", color=discord.Color.blue())
 
-                if thumbnail_url:
-                    embed.set_thumbnail(url=thumbnail_url)
-                
+            if thumbnail_url:
+                embed.set_thumbnail(url=thumbnail_url)
+            
 
-                platform_links = data.get('linksByPlatform', {}) 
-                clickable_icons = []
-                for platform_key, platform_value in PLATFORMS_TO_CHECK.items():
-                    if platform_key in platform_links:
-                        platform_url = platform_links[platform_key]['url']
-                        platform_emoji = CACHED_APP_EMOJIS.get(platform_key, '▪️')
-                        # Create a clickable link where the text is the standard emoji
-                        clickable_icons.append(f"\n[{platform_emoji} {platform_value['name']}]({platform_url})\n")
-                if clickable_icons:
-                    embed.add_field(
-                        name="Listen On:\n",
-                        value=" ".join(clickable_icons),
-                        inline=True
-                    )
-                await message.channel.send(embed=embed)
-                
-
-                
-            except requests.exceptions.RequestException as e:
-                print(f"Error calling Odesli API: {e}")
-                error_embed = discord.Embed(
-                    title="API Error",
-                    description="Sorry, I had trouble converting that link right now.",
-                    color=discord.Color.orange()
+            platform_links = data.get('linksByPlatform', {})
+            clickable_icons = []
+            for platform_key, platform_value in PLATFORMS_TO_CHECK.items():
+                if platform_key == music_platform:
+                    # If the platform matches the original link, we can skip it
+                    continue
+                if platform_key in platform_links:
+                    platform_url = platform_links[platform_key]['url']
+                    platform_emoji = CACHED_APP_EMOJIS.get(platform_key, '▪️')
+                    # Create a clickable link where the text is the standard emoji
+                    clickable_icons.append(f"\n[{platform_emoji} {platform_value['name']}]({platform_url})\n")
+            if clickable_icons:
+                embed.add_field(
+                    name="Listen On:\n",
+                    value=" ".join(clickable_icons),
+                    inline=True
                 )
-                await message.channel.send(embed=error_embed)
+            await message.channel.send(embed=embed)
+            
+
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Error calling Odesli API: {e}")
+            error_embed = discord.Embed(
+                title="API Error",
+                description="Sorry, I had trouble converting that link right now.",
+                color=discord.Color.orange()
+            )
+            await message.channel.send(embed=error_embed)
             
 client.run(DISCORD_TOKEN)
