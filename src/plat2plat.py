@@ -144,7 +144,7 @@ async def on_message(message):
                     value=" ".join(clickable_icons),
                     inline=True
                 )
-            await message.channel.send(embed=embed)
+                await message.channel.send(embed=embed)
             
 
             
