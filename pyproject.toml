@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "plat2plat"
+version = "0.1.0"
+description = ""
+authors = ["robert davidson <robertjohnd@live.ca>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+discord-py = "^2.5.2"
+dotenv = "^0.9.9"
+requests = "^2.32.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
